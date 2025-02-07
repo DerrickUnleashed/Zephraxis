@@ -1,7 +1,6 @@
 package Zephyr.game.GameScreens;
 
 import Zephyr.game.network.GameClient;
-import Zephyr.game.network.GameClient2;
 import Zephyr.game.player.Player;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
@@ -11,18 +10,18 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.ObjectMap;
 
-public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCallback, GameClient2.GameStateCallback {
+public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCallback {
     private SpriteBatch batch;
     private OrthographicCamera camera;
     private Player localPlayer1, localPlayer2;
     private ObjectMap<Integer, Player> remotePlayers;
     private Texture backdrop;
     private GameClient client1;
-    private GameClient2 client2;
+    private GameClient client2;
     private float lastUpdateTime = 0;
     private static final float UPDATE_INTERVAL = 1 / 60f;
 
-    public PVPScreen(GameClient client1, GameClient2 client2) {
+    public PVPScreen(GameClient client1, GameClient client2) {
         this.client1 = client1;
         this.client2 = client2;
         this.remotePlayers = new ObjectMap<>();

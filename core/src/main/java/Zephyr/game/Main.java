@@ -1,13 +1,12 @@
 package Zephyr.game;
 
-import Zephyr.game.network.GameClient2;
 import com.badlogic.gdx.Game;
 import Zephyr.game.GameScreens.PVPScreen;
 import Zephyr.game.network.GameClient;
 
 public class Main extends Game {
     private GameClient client1;
-    private GameClient2 client2;
+    private GameClient client2;
 
     private static final String DEFAULT_SERVER = "127.0.0.1";
     private static final int DEFAULT_PORT = 6000;
@@ -20,7 +19,7 @@ public class Main extends Game {
         System.out.println("Connecting to server: " + serverIp + ":" + serverPort);
 
         client1 = new GameClient(serverIp, serverPort, null);
-        client2 = new GameClient2(serverIp, serverPort, null);
+        client2 = new GameClient(serverIp, serverPort, null);
 
         client1.create();
         client2.create();
