@@ -31,6 +31,7 @@ public class Main extends Game {
         setScreen(gameScreen);
     }
 
+    
     @Override
     public void render() {
         super.render();

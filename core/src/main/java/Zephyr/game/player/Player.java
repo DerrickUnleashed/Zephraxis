@@ -94,6 +94,7 @@ public class Player {
 
         // Remove off-screen projectiles
         for (int i = projectiles.size - 1; i >= 0; i--) {
+            projectiles.get(i).hit(null);
             if (projectiles.get(i).isOffScreen(screenWidth, screenHeight)) {
                 projectiles.removeIndex(i);
             }
@@ -116,6 +117,13 @@ public class Player {
 
     public Rectangle getHitbox() {
         return hitbox;
+    }
+
+    public void takeDamage(int damage) {
+        health -= damage;
+        if (health <= 0) {
+            dispose();
+        }
     }
 
     public void render(SpriteBatch batch) {
