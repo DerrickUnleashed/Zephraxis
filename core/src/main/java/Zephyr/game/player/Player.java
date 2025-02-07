@@ -14,10 +14,7 @@ public class Player {
     private float x, y;
     private float speed;
     private int screenWidth, screenHeight;
-
-    @SuppressWarnings("unused")
     private int health, defense, strength;
-
     private Array<Projectile> projectiles;
     private float projectileCooldown;
     private Rectangle hitbox;
@@ -33,27 +30,30 @@ public class Player {
         this.health = 100;
         this.defense = 10;
         this.strength = 15;
-
         this.projectiles = new Array<>();
         this.projectileCooldown = 0;
     }
+
+    // Add new spawnProjectile method
+    public void spawnProjectile(float startX, float startY, float directionX, float directionY) {
+        Vector2 direction = new Vector2(directionX, directionY).nor();
+        projectiles.add(new Projectile(startX, startY, direction, 300));
+    }
+
     public float getX() {
         return x;
     }
 
-    // Getter for y-coordinate
     public float getY() {
         return y;
     }
 
-    // Setter for position
     public void setPosition(float x, float y) {
         this.x = x;
         this.y = y;
-
-        // Update hitbox position
         hitbox.setPosition(x, y);
     }
+
     public void update() {
         // Movement controls
         if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
@@ -73,7 +73,7 @@ public class Player {
         if (x < 0) x = 0;
         if (x > screenWidth - texture.getWidth()) x = screenWidth - texture.getWidth();
         if (y < 0) y = 0;
-        if (y > screenHeight / 2 - texture.getHeight()) y = screenHeight / 2 - texture.getHeight(); // Restrict to half the screen height
+        if (y > screenHeight - texture.getHeight()) y = screenHeight - texture.getHeight();
 
         hitbox.setPosition(x, y);
 
@@ -81,7 +81,7 @@ public class Player {
         if ((Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE))
             && projectileCooldown <= 0) {
             shoot();
-            projectileCooldown = 0.25f; // 0.5 seconds cooldown
+            projectileCooldown = 0.25f;
         }
 
         projectileCooldown -= Gdx.graphics.getDeltaTime();
@@ -99,6 +99,13 @@ public class Player {
         }
     }
 
+    private void shoot() {
+        Vector2 mousePosition = new Vector2(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY());
+        Vector2 playerCenter = new Vector2(x + texture.getWidth() / 2f, y + texture.getHeight() / 2f);
+        Vector2 direction = mousePosition.sub(playerCenter).nor();
+        spawnProjectile(playerCenter.x, playerCenter.y, direction.x, direction.y);
+    }
+
     public Rectangle getHitbox() {
         return hitbox;
     }
@@ -108,30 +115,6 @@ public class Player {
         for (Projectile projectile : projectiles) {
             projectile.render(batch);
         }
-    }
-
-    private void shoot() {
-        // Get the mouse position in world coordinates
-        Vector2 mousePosition = new Vector2(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY());
-        Vector2 playerCenter = new Vector2(x + texture.getWidth() / 2f, y + texture.getHeight() / 2f);
-
-        // Calculate direction vector
-        Vector2 direction = mousePosition.sub(playerCenter).nor();
-
-        // Add new projectile
-        projectiles.add(new Projectile(playerCenter.x, playerCenter.y, direction, 300));
-    }
-
-    public void takeDamage(int amount) {
-        health -= Math.max(0, amount - defense);
-        if (health <= 0) {
-            // Handle player death
-        }
-    }
-
-    public void heal(int amount) {
-        health += amount;
-        if (health > 100) health = 100; // Cap health at max
     }
 
     public void dispose() {

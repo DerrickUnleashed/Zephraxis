@@ -8,76 +8,99 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.ObjectMap;
 
-public class PVPScreen extends ScreenAdapter {
+public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCallback {
     private SpriteBatch batch;
     private OrthographicCamera camera;
     private Player localPlayer;
-    private Player remotePlayer; // For opponent
+    private ObjectMap<Integer, Player> remotePlayers;
     private Texture backdrop;
-    private GameClient localClient;
+    private GameClient client;
+    private float lastUpdateTime = 0;
+    private static final float UPDATE_INTERVAL = 1/60f; // 60 updates per second
 
-    public PVPScreen(GameClient localClient) {
-        this.localClient = localClient;
+    public PVPScreen(GameClient client) {
+        this.client = client;
+        this.remotePlayers = new ObjectMap<>();
     }
 
     @Override
     public void show() {
         batch = new SpriteBatch();
         camera = new OrthographicCamera();
-        camera.setToOrtho(false, 800, 600); // Set camera size
+        camera.setToOrtho(false, 800, 600);
         backdrop = new Texture("arena.png");
 
-        // Initialize players
-        localPlayer = new Player(400, 50, 200, 800, 600); // Local player
-        remotePlayer = new Player(400, 500, 200, 800, 600); // Opponent player
+        // Initialize local player
+        localPlayer = new Player(400, 50, 200, 800, 600);
     }
 
     @Override
     public void render(float delta) {
-        // Clear the screen
         ScreenUtils.clear(0, 0, 0, 1);
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
 
-        // Update the local player
+        // Update local player
         localPlayer.update();
 
-        // Send local player data to the server
-        localClient.sendMessage("PLAYER " + localPlayer.getX() + " " + localPlayer.getY());
-
-        // Receive opponent's data from the server
-        String serverMessage = localClient.readMessage();
-        if (serverMessage != null && serverMessage.startsWith("PLAYER")) {
-            String[] data = serverMessage.split(" ");
-            float opponentX = Float.parseFloat(data[1]);
-            float opponentY = Float.parseFloat(data[2]);
-            remotePlayer.setPosition(opponentX, opponentY);
+        // Send position updates at fixed interval
+        lastUpdateTime += delta;
+        if (lastUpdateTime >= UPDATE_INTERVAL) {
+            client.sendPlayerPosition(localPlayer.getX(), localPlayer.getY());
+            lastUpdateTime = 0;
         }
 
-        // Draw the backdrop and players
+        // Render game state
         batch.begin();
 
-        // Draw scaled backdrop
+        // Draw backdrop
         float screenWidth = Gdx.graphics.getWidth();
         float screenHeight = Gdx.graphics.getHeight();
-        float backdropAspectRatio = (float) backdrop.getWidth() / backdrop.getHeight();
-        float screenAspectRatio = screenWidth / screenHeight;
+        batch.draw(backdrop, 0, 0, screenWidth, screenHeight);
 
-        float scaledWidth, scaledHeight;
-        if (backdropAspectRatio > screenAspectRatio) {
-            scaledWidth = screenWidth;
-            scaledHeight = screenWidth / backdropAspectRatio;
-        } else {
-            scaledHeight = screenHeight;
-            scaledWidth = screenHeight * backdropAspectRatio;
+        // Draw all players
+        localPlayer.render(batch);
+        for (Player player : remotePlayers.values()) {
+            player.render(batch);
         }
 
-        batch.draw(backdrop, 0, 0, scaledWidth, scaledHeight);
-
-        // Draw players
-        localPlayer.render(batch);
-        remotePlayer.render(batch);
-
         batch.end();
+    }
+
+    @Override
+    public void onPlayerUpdate(int playerId, float x, float y) {
+        Player remotePlayer = remotePlayers.get(playerId);
+        if (remotePlayer == null) {
+            remotePlayer = new Player(x, y, 200, 800, 600);
+            remotePlayers.put(playerId, remotePlayer);
+        }
+        remotePlayer.setPosition(x, y);
+    }
+
+    @Override
+    public void onProjectileSpawn(int playerId, float x, float y, float directionX, float directionY) {
+        if (playerId != client.getPlayerId()) {
+            Player shooter = remotePlayers.get(playerId);
+            if (shooter != null) {
+                shooter.spawnProjectile(x, y, directionX, directionY);
+            }
+        }
+    }
+
+    @Override
+    public void onPlayerConnect(int id) {
+        System.out.println("Player " + id + " connected");
+    }
+
+    @Override
+    public void onPlayerDisconnect(int id) {
+        Player removed = remotePlayers.remove(id);
+        if (removed != null) {
+            removed.dispose();
+        }
+        System.out.println("Player " + id + " disconnected");
     }
 
     @Override
@@ -85,6 +108,8 @@ public class PVPScreen extends ScreenAdapter {
         batch.dispose();
         backdrop.dispose();
         localPlayer.dispose();
-        remotePlayer.dispose();
+        for (Player player : remotePlayers.values()) {
+            player.dispose();
+        }
     }
 }

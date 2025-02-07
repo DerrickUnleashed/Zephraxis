@@ -1,12 +1,6 @@
 package Zephyr.game;
 
 import com.badlogic.gdx.Game;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.utils.ScreenUtils;
-
 import Zephyr.game.GameScreens.PVPScreen;
 import Zephyr.game.network.GameClient;
 
@@ -14,18 +8,25 @@ import Zephyr.game.network.GameClient;
 public class Main extends Game {
     private GameClient client1;
 
+    // Server address can be passed as a system property
+    private static final String DEFAULT_SERVER = "127.0.0.1";
+    private static final int DEFAULT_PORT = 6000;
+
     @Override
     public void create() {
-        // Initialize the server address and port
-        String serverIp = "127.0.0.1";  // Local testing
-        int serverPort = 6000; // Port used for client-server communication
+        // Get server address from system property or use default
+        String serverIp = System.getProperty("server.address", DEFAULT_SERVER);
+        int serverPort = Integer.parseInt(System.getProperty("server.port", String.valueOf(DEFAULT_PORT)));
 
-        // Create and start client1 (local player)
-        client1 = new GameClient(serverIp, serverPort); 
-        client1.create();  // Ensure the client is created properly
+        System.out.println("Connecting to server: " + serverIp + ":" + serverPort);
 
-        // Wait for client connection before setting the screen
-        setScreen(new PVPScreen(client1));
+        // Create and start client
+        client1 = new GameClient(serverIp, serverPort, new PVPScreen(null));
+        client1.create();
+
+        // Set up the game screen
+        PVPScreen gameScreen = new PVPScreen(client1);
+        setScreen(gameScreen);
     }
 
     @Override
@@ -36,6 +37,8 @@ public class Main extends Game {
     @Override
     public void dispose() {
         super.dispose();
-        client1.dispose();  // Proper cleanup of client resources
+        if (client1 != null) {
+            client1.dispose();
+        }
     }
 }
