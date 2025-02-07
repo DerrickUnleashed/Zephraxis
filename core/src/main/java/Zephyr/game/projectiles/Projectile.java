@@ -1,9 +1,10 @@
 package Zephyr.game.projectiles;
 
-import com.badlogic.gdx.Gdx;
 import Zephyr.game.player.Player;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
@@ -11,41 +12,45 @@ public class Projectile {
     private Texture texture;
     private float x, y;
     private Vector2 velocity;
-    private int damage = 10;
+    private int damage;
     private float rotation;
     private Rectangle projbox;
+    private String sourceSide; // Tracks which player shot it
 
-    public Projectile(float x, float y, Vector2 direction, float speed) {
+    public Projectile(float x, float y, int damage, Vector2 direction, float speed, String sourceSide) {
         this.texture = new Texture("Kunai.png");
         this.x = x;
         this.y = y;
-        this.rotation = direction.angleDeg() - 90; // Adjust rotation for a vertical kunai
+        this.damage = damage;
+        this.rotation = direction.angleDeg() - 90;
         this.velocity = direction.scl(speed);
-        // Initialize the projectile hitbox
         this.projbox = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
+        this.sourceSide = sourceSide;
     }
 
-    public void hit(Player player) {
-        if (player.getHitbox().overlaps(projbox)) {
-            player.takeDamage(damage); 
-            texture.dispose();
+    public boolean hit(Player player) {
+        if (player != null && !player.getSide().equals(sourceSide) && projbox.overlaps(player.getHitbox())) {
+            player.takeDamage(damage);
+            return true; // Indicates projectile should be removed
         }
+        return false;
     }
 
     public void update() {
-        // Update position
         x += velocity.x * Gdx.graphics.getDeltaTime();
         y += velocity.y * Gdx.graphics.getDeltaTime();
-
-        // Update hitbox position
         projbox.setPosition(x, y);
     }
 
     public void render(SpriteBatch batch) {
-        batch.draw(texture, x, y, texture.getWidth() / 2f, texture.getHeight() / 2f,
-                texture.getWidth(), texture.getHeight(), 1, 1, rotation, 0, 0,
-                texture.getWidth(), texture.getHeight(), false, false);
+        // Create a TextureRegion from the texture
+        TextureRegion region = new TextureRegion(texture);
+
+        // Draw the region with rotation
+        batch.draw(region, x, y, region.getRegionWidth() / 2f, region.getRegionHeight() / 2f,
+            region.getRegionWidth(), region.getRegionHeight(), 1, 1, rotation);
     }
+
 
     public boolean isOffScreen(int screenWidth, int screenHeight) {
         return x < 0 || x > screenWidth || y < 0 || y > screenHeight;

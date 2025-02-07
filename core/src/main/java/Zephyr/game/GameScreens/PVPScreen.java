@@ -49,8 +49,8 @@ public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCall
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
-        localPlayer1.update();
-        localPlayer2.update();
+        localPlayer1.update(localPlayer2);
+        localPlayer2.update(localPlayer1);
 
         lastUpdateTime += delta;
         if (lastUpdateTime >= UPDATE_INTERVAL) {
