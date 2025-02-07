@@ -1,6 +1,7 @@
 package Zephyr.game.GameScreens;
 
 import Zephyr.game.network.GameClient;
+import Zephyr.game.network.GameClient2;
 import Zephyr.game.player.Player;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
@@ -10,19 +11,25 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.ObjectMap;
 
-public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCallback {
+public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCallback, GameClient2.GameStateCallback {
     private SpriteBatch batch;
     private OrthographicCamera camera;
-    private Player localPlayer;
+    private Player localPlayer1, localPlayer2;
     private ObjectMap<Integer, Player> remotePlayers;
     private Texture backdrop;
-    private GameClient client;
+    private GameClient client1;
+    private GameClient2 client2;
     private float lastUpdateTime = 0;
-    private static final float UPDATE_INTERVAL = 1/60f; // 60 updates per second
+    private static final float UPDATE_INTERVAL = 1 / 60f;
 
-    public PVPScreen(GameClient client) {
-        this.client = client;
+    public PVPScreen(GameClient client1, GameClient2 client2) {
+        this.client1 = client1;
+        this.client2 = client2;
         this.remotePlayers = new ObjectMap<>();
+
+        // Register callbacks for both clients
+        client1.setGameStateCallback(this);
+        client2.setGameStateCallback(this);
     }
 
     @Override
@@ -32,8 +39,9 @@ public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCall
         camera.setToOrtho(false, 800, 600);
         backdrop = new Texture("arena.png");
 
-        // Initialize local player
-        localPlayer = new Player(400, 50, 200, 800, 600);
+        // Initialize local players at different positions
+        localPlayer1 = new Player(300, 50, 200, 800, 600);
+        localPlayer2 = new Player(500, 50, 200, 800, 600);
     }
 
     @Override
@@ -42,35 +50,38 @@ public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCall
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
-        // Update local player
-        localPlayer.update();
+        localPlayer1.update();
+        localPlayer2.update();
 
-        // Send position updates at fixed interval
         lastUpdateTime += delta;
         if (lastUpdateTime >= UPDATE_INTERVAL) {
-            client.sendPlayerPosition(localPlayer.getX(), localPlayer.getY());
+            client1.sendPlayerPosition(localPlayer1.getX(), localPlayer1.getY());
+            client2.sendPlayerPosition(localPlayer2.getX(), localPlayer2.getY());
             lastUpdateTime = 0;
         }
 
-        // Render game state
         batch.begin();
+        batch.draw(backdrop, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-        // Draw backdrop
-        float screenWidth = Gdx.graphics.getWidth();
-        float screenHeight = Gdx.graphics.getHeight();
-        batch.draw(backdrop, 0, 0, screenWidth, screenHeight);
+        localPlayer1.render(batch);
+        localPlayer2.render(batch);
 
-        // Draw all players
-        localPlayer.render(batch);
         for (Player player : remotePlayers.values()) {
             player.render(batch);
         }
-
         batch.end();
     }
 
     @Override
     public void onPlayerUpdate(int playerId, float x, float y) {
+        if (playerId == client1.getPlayerId()) {
+            localPlayer1.setPosition(x, y);
+            return;
+        } else if (playerId == client2.getPlayerId()) {
+            localPlayer2.setPosition(x, y);
+            return;
+        }
+
         Player remotePlayer = remotePlayers.get(playerId);
         if (remotePlayer == null) {
             remotePlayer = new Player(x, y, 200, 800, 600);
@@ -81,11 +92,13 @@ public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCall
 
     @Override
     public void onProjectileSpawn(int playerId, float x, float y, float directionX, float directionY) {
-        if (playerId != client.getPlayerId()) {
-            Player shooter = remotePlayers.get(playerId);
-            if (shooter != null) {
-                shooter.spawnProjectile(x, y, directionX, directionY);
-            }
+        if (playerId == client1.getPlayerId() || playerId == client2.getPlayerId()) {
+            return; // Don't process own projectiles
+        }
+
+        Player shooter = remotePlayers.get(playerId);
+        if (shooter != null) {
+            shooter.spawnProjectile(x, y, directionX, directionY);
         }
     }
 
@@ -107,7 +120,8 @@ public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCall
     public void dispose() {
         batch.dispose();
         backdrop.dispose();
-        localPlayer.dispose();
+        localPlayer1.dispose();
+        localPlayer2.dispose();
         for (Player player : remotePlayers.values()) {
             player.dispose();
         }

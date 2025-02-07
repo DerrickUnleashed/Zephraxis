@@ -24,9 +24,15 @@ public class GameClient extends ApplicationAdapter {
         void onPlayerConnect(int id);
         void onPlayerDisconnect(int id);
     }
-    public int getPlayerId(){
+
+    public int getPlayerId() {
         return this.playerId;
     }
+
+    public void setGameStateCallback(GameStateCallback callback) {
+        this.callback = callback;
+    }
+
     public GameClient(String serverIp, int serverPort, GameStateCallback callback) {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
@@ -43,11 +49,9 @@ public class GameClient extends ApplicationAdapter {
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             isRunning = true;
 
-            // Start listening thread
             listenerThread = new Thread(this::listenToServer);
             listenerThread.start();
 
-            // Get player ID from server
             String initMessage = reader.readLine();
             if (initMessage.startsWith("INIT")) {
                 playerId = Integer.parseInt(initMessage.split(" ")[1]);
@@ -87,6 +91,8 @@ public class GameClient extends ApplicationAdapter {
 
     private void handleServerMessage(String message) {
         try {
+            if (callback == null) return;
+
             String[] parts = message.split(" ", 2);
             switch (parts[0]) {
                 case "POS":
