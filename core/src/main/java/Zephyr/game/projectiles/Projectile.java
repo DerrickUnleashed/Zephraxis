@@ -10,6 +10,7 @@ public class Projectile {
     private Texture texture;
     private float x, y;
     private Vector2 velocity;
+    private int damage= 10;
     private float rotation;
     public Projectile(float x, float y, Vector2 direction, float speed) {
         this.texture = new Texture("Kunai.png");
