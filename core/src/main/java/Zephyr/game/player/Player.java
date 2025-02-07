@@ -18,8 +18,8 @@ public class Player {
     private Array<Projectile> projectiles;
     private float projectileCooldown;
     private Rectangle hitbox;
-
-    public Player(float x, float y, float speed, int screenWidth, int screenHeight) {
+    private String side;
+    public Player(float x, float y, float speed, int screenWidth, int screenHeight , String side) {
         this.texture = new Texture("Player.png");
         this.x = x;
         this.y = y;
@@ -32,6 +32,7 @@ public class Player {
         this.strength = 15;
         this.projectiles = new Array<>();
         this.projectileCooldown = 0;
+        this.side = side;
     }
 
     // Add new spawnProjectile method
@@ -56,16 +57,16 @@ public class Player {
 
     public void update() {
         // Movement controls
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.A) && side.equals("down")|| Gdx.input.isKeyPressed(Input.Keys.LEFT) && side.equals("up")) {
             x -= speed * Gdx.graphics.getDeltaTime();
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.D) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.RIGHT)&& side.equals("up") ) {
             x += speed * Gdx.graphics.getDeltaTime();
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.W) && side.equals("down")|| Gdx.input.isKeyPressed(Input.Keys.UP) &&side.equals("up")) {
             y += speed * Gdx.graphics.getDeltaTime();
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.S) && side.equals("down")|| Gdx.input.isKeyPressed(Input.Keys.DOWN) &&side.equals("up")) {
             y -= speed * Gdx.graphics.getDeltaTime();
         }
 
@@ -78,7 +79,7 @@ public class Player {
         hitbox.setPosition(x, y);
 
         // Shooting projectiles
-        if ((Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE))
+        if ((Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && side.equals("up") || Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && side.equals("down"))
             && projectileCooldown <= 0) {
             shoot();
             projectileCooldown = 0.25f;
@@ -100,11 +101,18 @@ public class Player {
     }
 
     private void shoot() {
-        Vector2 mousePosition = new Vector2(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY());
         Vector2 playerCenter = new Vector2(x + texture.getWidth() / 2f, y + texture.getHeight() / 2f);
-        Vector2 direction = mousePosition.sub(playerCenter).nor();
+        Vector2 direction;
+
+        if (side.equals("up")) {
+            direction = new Vector2(0, -1); // Shoots downward
+        } else {
+            direction = new Vector2(0, 1); // Shoots upward
+        }
+
         spawnProjectile(playerCenter.x, playerCenter.y, direction.x, direction.y);
     }
+
 
     public Rectangle getHitbox() {
         return hitbox;

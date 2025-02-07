@@ -39,8 +39,8 @@ public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCall
         backdrop = new Texture("arena.png");
 
         // Initialize local players at different positions
-        localPlayer1 = new Player(300, 50, 200, 800, 600);
-        localPlayer2 = new Player(500, 50, 200, 800, 600);
+        localPlayer1 = new Player(400, 250, 200, 800, 600,"up");
+        localPlayer2 = new Player(400, 50, 200, 800, 600,"down");
     }
 
     @Override
@@ -83,7 +83,7 @@ public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCall
 
         Player remotePlayer = remotePlayers.get(playerId);
         if (remotePlayer == null) {
-            remotePlayer = new Player(x, y, 200, 800, 600);
+            remotePlayer = new Player(x, y, 200, 800, 600,"up");
             remotePlayers.put(playerId, remotePlayer);
         }
         remotePlayer.setPosition(x, y);
