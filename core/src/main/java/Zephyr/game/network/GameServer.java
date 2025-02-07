@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 
 public class GameServer {
     private static final int PORT = 6000;
-    private static final int MAX_PLAYERS = 2;
+    private static final int MAX_PLAYERS = 10;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(MAX_PLAYERS);
     private static final ConcurrentHashMap<Integer, PlayerConnection> players = new ConcurrentHashMap<>();
     private static int nextPlayerId = 1;
@@ -17,6 +17,7 @@ public class GameServer {
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server started on port " + PORT);
+            System.out.println("Server is listening on all interfaces.");
 
             while (true) {
                 try {

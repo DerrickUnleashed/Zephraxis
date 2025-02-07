@@ -8,6 +8,13 @@ import Zephyr.game.Main;
 public class Lwjgl3Launcher {
     public static void main(String[] args) {
         if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
+
+        // Set server address and port from command line arguments
+        if (args.length >= 2) {
+            System.setProperty("server.address", args[0]);
+            System.setProperty("server.port", args[1]);
+        }
+
         createApplication();
     }
 

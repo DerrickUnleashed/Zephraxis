@@ -9,7 +9,7 @@ public class Main extends Game {
     private GameClient client1;
 
     // Server address can be passed as a system property
-    private static final String DEFAULT_SERVER = "https://d7ce-2405-201-e002-c856-8116-aa1f-fdb6-9f90.ngrok-free.app";
+    private static final String DEFAULT_SERVER = "127.0.0.1";
     private static final int DEFAULT_PORT = 6000;
 
     @Override
