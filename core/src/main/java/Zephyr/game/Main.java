@@ -10,6 +10,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import Zephyr.game.GameScreens.PVPScreen;
 import Zephyr.game.network.GameClient;
 
+@SuppressWarnings("unused")
 public class Main extends Game {
     private GameClient client1;
 

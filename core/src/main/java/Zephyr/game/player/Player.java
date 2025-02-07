@@ -15,6 +15,7 @@ public class Player {
     private float speed;
     private int screenWidth, screenHeight;
 
+    @SuppressWarnings("unused")
     private int health, defense, strength;
 
     private Array<Projectile> projectiles;
