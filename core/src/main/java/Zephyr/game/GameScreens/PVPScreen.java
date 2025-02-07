@@ -15,10 +15,10 @@ public class PVPScreen extends ScreenAdapter {
     private Player localPlayer;
     private Player remotePlayer; // For opponent
     private Texture backdrop;
-    private GameClient client; // For network communication
+    private GameClient localClient;
 
-    public PVPScreen(GameClient client) {
-        this.client = client;
+    public PVPScreen(GameClient localClient) {
+        this.localClient = localClient;
     }
 
     @Override
@@ -42,10 +42,10 @@ public class PVPScreen extends ScreenAdapter {
         localPlayer.update();
 
         // Send local player data to the server
-        client.sendMessage("PLAYER " + localPlayer.getX() + " " + localPlayer.getY());
+        localClient.sendMessage("PLAYER " + localPlayer.getX() + " " + localPlayer.getY());
 
         // Receive opponent's data from the server
-        String serverMessage = client.readMessage();
+        String serverMessage = localClient.readMessage();
         if (serverMessage != null && serverMessage.startsWith("PLAYER")) {
             String[] data = serverMessage.split(" ");
             float opponentX = Float.parseFloat(data[1]);

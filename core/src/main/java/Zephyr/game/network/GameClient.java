@@ -3,7 +3,6 @@ package Zephyr.game.network;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,41 +17,34 @@ public class GameClient extends ApplicationAdapter {
 
     private Thread listenerThread;
     private boolean isRunning;
-    private boolean isConnected;
+
+    private String serverIp;
+    private int serverPort;
+
+    public GameClient(String serverIp, int serverPort) {
+        this.serverIp = serverIp;
+        this.serverPort = serverPort;
+    }
 
     @Override
     public void create() {
-        // Initialize connection to the server
-        connectToServer();
-    }
-
-    private void connectToServer() {
         try {
-            socket = new Socket("127.0.0.1", 12345); // Replace with actual server IP and port
+            socket = new Socket(serverIp, serverPort); // Connect to the server using external IP
             writer = new PrintWriter(socket.getOutputStream(), true);
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             isRunning = true;
-            isConnected = true;
 
             // Start a thread to listen to server messages
             listenerThread = new Thread(this::listenToServer);
             listenerThread.start();
-
-            System.out.println("Connected to the server!");
         } catch (IOException e) {
             System.err.println("Unable to connect to the server: " + e.getMessage());
-            isConnected = false;
         }
     }
 
     @Override
     public void render() {
-        if (!isConnected) {
-            ScreenUtils.clear(0.2f, 0.2f, 0.2f, 1f); // Show a different screen if not connected
-            return;
-        }
-
         // Handle user input and send messages to the server
         if (Gdx.input.isKeyPressed(Input.Keys.W)) {
             sendMessage("MOVE UP");
@@ -69,28 +61,21 @@ public class GameClient extends ApplicationAdapter {
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
             sendMessage("SHOOT");
         }
-
-        // Check for incoming messages from the server
-        String message = readMessage();
-        if (message != null) {
-            handleServerMessage(message);
-        }
     }
 
     public void sendMessage(String message) {
         // Send a message to the server
-        if (isConnected && writer != null) {
+        if (writer != null) {
             writer.println(message);
         }
     }
 
     public String readMessage() {
-        // Read a message from the server
         try {
             if (reader != null && reader.ready()) {
-                return reader.readLine(); // Use 'reader' to read the message from the server
+                return reader.readLine(); // Use 'reader' instead of 'in'
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null; // Return null if no message is available
