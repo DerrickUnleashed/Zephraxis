@@ -84,7 +84,7 @@ public void update(Player opponent) {
 
     hitbox.setPosition(x, y);
 
-    if ((Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && side.equals("up") || Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && side.equals("down"))
+    if ((Gdx.input.isKeyJustPressed(Input.Keys.SHIFT_RIGHT) && side.equals("up") || Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && side.equals("down"))
         && projectileCooldown <= 0) {
         shoot();
         projectileCooldown = 0.25f;

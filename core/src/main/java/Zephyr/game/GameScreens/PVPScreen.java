@@ -35,12 +35,12 @@ public class PVPScreen extends ScreenAdapter implements GameClient.GameStateCall
     public void show() {
         batch = new SpriteBatch();
         camera = new OrthographicCamera();
-        camera.setToOrtho(false, 800, 600);
-        backdrop = new Texture("arena.png");
+        camera.setToOrtho(false, 600, 600);
+        backdrop = new Texture("Arena.png");
 
         // Initialize local players at different positions
-        localPlayer1 = new Player(400, 250, 200, 800, 600,"up");
-        localPlayer2 = new Player(400, 50, 200, 800, 600,"down");
+        localPlayer1 = new Player(300, 150, 200, 800, 800,"up");
+        localPlayer2 = new Player(300, 450, 200, 800, 800,"down");
     }
 
     @Override
