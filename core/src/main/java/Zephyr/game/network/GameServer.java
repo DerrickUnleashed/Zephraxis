@@ -9,15 +9,11 @@ import java.util.concurrent.Executors;
 
 public class GameServer {
     private static final int PORT = 6000;
-    private static final int MAX_PLAYERS = 10;
+    private static final int MAX_PLAYERS = 20;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(MAX_PLAYERS);
     private static final ConcurrentHashMap<Integer, PlayerConnection> players = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, Boolean> readyPlayers = new ConcurrentHashMap<>();
     private static int nextPlayerId = 1;
-
-    public static int playercount(){
-        return players.size();
-    }
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -62,7 +58,7 @@ public class GameServer {
         if (players.size() >= 2 && readyPlayers.size() >= 2) {
             System.out.println("Starting game with " + readyPlayers.size() + " ready players");
 
-            // Get the 2 ready players with lowest IDs
+            // Get the 2 ready players with least IDs
             Integer[] readyPlayerIds = readyPlayers.keySet().toArray(new Integer[0]);
             if (readyPlayerIds.length >= 2) {
                 int player1 = readyPlayerIds[0];
