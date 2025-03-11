@@ -40,7 +40,7 @@ public class Player {
 
 public void spawnProjectile(float startX, float startY, float directionX, float directionY) {
     Vector2 direction = new Vector2(directionX, directionY).nor();
-    projectiles.add(new Projectile(startX, startY, 10, direction, 300, side));
+    projectiles.add(new Projectile(startX, startY, 10, direction, 500, side));
 }
 
 public float getX() {
@@ -84,10 +84,10 @@ public void update(Player opponent) {
 
     hitbox.setPosition(x, y);
 
-    if ((Gdx.input.isKeyJustPressed(Input.Keys.SHIFT_RIGHT) && side.equals("up") || Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && side.equals("down"))
+    if ((Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_ENTER) && side.equals("up") || Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && side.equals("down"))
         && projectileCooldown <= 0) {
         shoot();
-        projectileCooldown = 0.25f;
+        projectileCooldown = 0.3f;
     }
 
     projectileCooldown -= Gdx.graphics.getDeltaTime();

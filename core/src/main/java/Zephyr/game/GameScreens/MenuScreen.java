@@ -5,90 +5,127 @@ import Zephyr.game.network.GameClient;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 
-public class MenuScreen extends ScreenAdapter {
-    private Main game;
+public class MenuScreen extends ScreenAdapter implements GameClient.GameStateCallback {
     private SpriteBatch batch;
-    private Texture background;
-    private Texture startButton;
-    private GameClient client1;
-    private GameClient client2;
-    private static final String DEFAULT_SERVER = "127.0.0.1";
-    private static final int DEFAULT_PORT = 6000;
-    public MenuScreen(Main game) {
+    private Texture menuBackground;
+    private GameClient client;
+    private boolean gameStarted = false;
+    private Stage stage;
+    private BitmapFont font;
+    private Main game;
+
+    public MenuScreen(GameClient client, Main game) {
+        this.client = client;
         this.game = game;
+        client.setGameStateCallback(this);  // Listen for server messages
     }
 
     @Override
     public void show() {
         batch = new SpriteBatch();
-        background = new Texture("<here>.png");
-        startButton = new Texture("start_button.png");
+        menuBackground = new Texture("MenuBackground.png");
+        font = new BitmapFont();
+
+        // Create stage with viewport
+        stage = new Stage(new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
+        Gdx.input.setInputProcessor(stage);
+
+        // Create button style
+        TextButtonStyle buttonStyle = new TextButtonStyle();
+        buttonStyle.font = font;
+        buttonStyle.up = new TextureRegionDrawable(new TextureRegion(new Texture("button_up.png")));
+        buttonStyle.down = new TextureRegionDrawable(new TextureRegion(new Texture("button_down.png")));
+
+        // Create start button
+        TextButton startButton = new TextButton("Start Game", buttonStyle);
+        startButton.setPosition(Gdx.graphics.getWidth() / 2 - startButton.getWidth() / 2,
+            Gdx.graphics.getHeight() / 2 - startButton.getHeight() / 2);
+
+        // Add click listener
+        startButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                Gdx.app.log("MenuScreen", "Start button clicked");
+                game.setScreen(new WaitingScreen(game, client));
+            }
+        });
+
+        stage.addActor(startButton);
     }
 
     @Override
     public void render(float delta) {
+        ScreenUtils.clear(0, 0, 0, 1);
+
         batch.begin();
-        batch.draw(background, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.draw(startButton, Gdx.graphics.getWidth() / 2 - startButton.getWidth() / 2, 200);
+        batch.draw(menuBackground, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch.end();
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-            String serverIp = System.getProperty("server.address", DEFAULT_SERVER);
-            int serverPort = Integer.parseInt(System.getProperty("server.port", String.valueOf(DEFAULT_PORT)));
+        // Draw stage with UI elements
+        stage.act(delta);
+        stage.draw();
+    }
 
-            System.out.println("Connecting to server: " + serverIp + ":" + serverPort);
-            client1 = new GameClient(serverIp, serverPort, null);
-            client2 = new GameClient(serverIp, serverPort, null);
+    @Override
+    public void onPlayerConnect(int id) {
+        System.out.println("Player " + id + " connected.");
+    }
 
-            client1.create();
-            client2.create();
+    @Override
+    public void onGameStart(int opponentId) {
+        if (!gameStarted) {
+            gameStarted = true;
 
-            PVPScreen gameScreen = new PVPScreen(client1, client2);
-            client1.setGameStateCallback(gameScreen);
-            client2.setGameStateCallback(gameScreen);
+            // Determine player side
+            String playerSide = (client.getPlayerId() < opponentId) ? "down" : "up";
+
+            // Switch to PVPScreen
+            Gdx.app.postRunnable(() -> {
+                game.setScreen(new PVPScreen(client, playerSide));
+            });
+
+            System.out.println("Game starting! Assigned side: " + playerSide);
         }
+    }
+
+    // Implementations for other interface methods
+    @Override
+    public void onPlayerUpdate(int playerId, float x, float y) {
+        // Not needed in MenuScreen
+    }
+
+    @Override
+    public void onProjectileSpawn(int playerId, float x, float y, float directionX, float directionY) {
+        // Not needed in MenuScreen
+    }
+
+    @Override
+    public void onPlayerDisconnect(int id) {
+        // Not needed in MenuScreen
     }
 
     @Override
     public void dispose() {
         batch.dispose();
-        background.dispose();
-        startButton.dispose();
-    }
-}
-
-class GameOverScreen extends ScreenAdapter {
-    private Main game;
-    private SpriteBatch batch;
-    private Texture background;
-
-    public GameOverScreen(Main game) {
-        this.game = game;
+        menuBackground.dispose();
+        stage.dispose();
+        font.dispose();
     }
 
     @Override
-    public void show() {
-        batch = new SpriteBatch();
-        background = new Texture("game_over.png");
-    }
-
-    @Override
-    public void render(float delta) {
-        batch.begin();
-        batch.draw(background, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.end();
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-            game.setScreen(new MenuScreen(game));
-        }
-    }
-
-    @Override
-    public void dispose() {
-        batch.dispose();
-        background.dispose();
+    public void resize(int width, int height) {
+        stage.getViewport().update(width, height, true);
     }
 }

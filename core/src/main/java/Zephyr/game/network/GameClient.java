@@ -1,8 +1,11 @@
 package Zephyr.game.network;
 
+import Zephyr.game.Main;
 import com.badlogic.gdx.ApplicationAdapter;
 import java.io.*;
 import java.net.Socket;
+
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.JsonWriter;
 
@@ -17,12 +20,14 @@ public class GameClient extends ApplicationAdapter {
     private int playerId = -1;
     private GameStateCallback callback;
     private Json json;
+    private Main game; // Reference to the main game class for screen transitions
 
     public interface GameStateCallback {
         void onPlayerUpdate(int playerId, float x, float y);
         void onProjectileSpawn(int playerId, float x, float y, float directionX, float directionY);
         void onPlayerConnect(int id);
         void onPlayerDisconnect(int id);
+        void onGameStart(int opponentId);
     }
 
     public int getPlayerId() {
@@ -31,6 +36,10 @@ public class GameClient extends ApplicationAdapter {
 
     public void setGameStateCallback(GameStateCallback callback) {
         this.callback = callback;
+    }
+
+    public void setGame(Main game) {
+        this.game = game;
     }
 
     public GameClient(String serverIp, int serverPort, GameStateCallback callback) {
@@ -76,11 +85,19 @@ public class GameClient extends ApplicationAdapter {
         }
     }
 
+    public void sendReadyToPlay() {
+        if (writer != null && playerId != -1) {
+            writer.println("READY " + playerId);
+            System.out.println("Sent READY signal to server");
+        }
+    }
+
     private void listenToServer() {
         try {
             String message;
             while (isRunning && (message = reader.readLine()) != null) {
-                handleServerMessage(message);
+                final String msg = message;
+                Gdx.app.postRunnable(() -> handleServerMessage(msg));
             }
         } catch (IOException e) {
             if (isRunning) {
@@ -107,6 +124,10 @@ public class GameClient extends ApplicationAdapter {
                     break;
                 case "CONNECT":
                     callback.onPlayerConnect(Integer.parseInt(parts[1]));
+                    break;
+                case "START":
+                    int opponentId = Integer.parseInt(parts[1]);
+                    callback.onGameStart(opponentId);
                     break;
                 case "DISCONNECT":
                     callback.onPlayerDisconnect(Integer.parseInt(parts[1]));

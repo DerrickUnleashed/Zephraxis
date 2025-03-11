@@ -1,14 +1,12 @@
 package Zephyr.game;
 
-import com.badlogic.gdx.Game;
-import Zephyr.game.GameScreens.PVPScreen;
+import Zephyr.game.GameScreens.MenuScreen;
 import Zephyr.game.network.GameClient;
+import com.badlogic.gdx.Game;
 
 public class Main extends Game {
-    private GameClient client1;
-    private GameClient client2;
-
-    private static final String DEFAULT_SERVER = "127.0.0.1";
+    private GameClient client;
+    private static final String DEFAULT_SERVER = "0.0.0.0";
     private static final int DEFAULT_PORT = 6000;
 
     @Override
@@ -18,20 +16,13 @@ public class Main extends Game {
 
         System.out.println("Connecting to server: " + serverIp + ":" + serverPort);
 
-        client1 = new GameClient(serverIp, serverPort, null);
-        client2 = new GameClient(serverIp, serverPort, null);
+        client = new GameClient(serverIp, serverPort, null);
+        client.create();
+        client.setGame(this); // Pass the game instance to the client
 
-        client1.create();
-        client2.create();
-
-        PVPScreen gameScreen = new PVPScreen(client1, client2);
-        client1.setGameStateCallback(gameScreen);
-        client2.setGameStateCallback(gameScreen);
-
-        setScreen(gameScreen);
+        setScreen(new MenuScreen(client, this)); // Pass both client and game instance
     }
 
-    
     @Override
     public void render() {
         super.render();
@@ -40,11 +31,8 @@ public class Main extends Game {
     @Override
     public void dispose() {
         super.dispose();
-        if (client1 != null) {
-            client1.dispose();
-        }
-        if (client2 != null) {
-            client2.dispose();
+        if (client != null) {
+            client.dispose();
         }
     }
 }
