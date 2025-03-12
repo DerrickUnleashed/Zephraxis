@@ -1,5 +1,6 @@
 package Zephyr.game.player;
 
+import Zephyr.game.network.GameClient;
 import Zephyr.game.projectiles.Projectile;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -20,8 +21,9 @@ public class Player {
     private Rectangle hitbox;
     private String side;
     private boolean isDead;
-
-    public Player(float x, float y, float speed, int screenWidth, int screenHeight , String side){
+    private int playerID;
+    private GameClient client;
+    public Player(float x, float y, float speed, int screenWidth, int screenHeight, String side, GameClient client) {
         this.texture = new Texture("Player.png");
         this.x = x;
         this.y = y;
@@ -36,109 +38,180 @@ public class Player {
         this.projectileCooldown = 0;
         this.side = side;
         this.isDead = false;
-}
-
-public void spawnProjectile(float startX, float startY, float directionX, float directionY) {
-    Vector2 direction = new Vector2(directionX, directionY).nor();
-    projectiles.add(new Projectile(startX, startY, 10, direction, 500, side));
-}
-
-public float getX() {
-    return x;
-}
-
-public float getY() {
-    return y;
-}
-
-public String getSide() {
-    return side;
-}
-
-public void setPosition(float x, float y) {
-    this.x = x;
-    this.y = y;
-    hitbox.setPosition(x, y);
-}
-
-public void update(Player opponent) {
-    if (isDead) return;
-
-    if (Gdx.input.isKeyPressed(Input.Keys.A) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.LEFT) && side.equals("up")) {
-        x -= speed * Gdx.graphics.getDeltaTime();
-    }
-    if (Gdx.input.isKeyPressed(Input.Keys.D) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.RIGHT) && side.equals("up")) {
-        x += speed * Gdx.graphics.getDeltaTime();
-    }
-    if (Gdx.input.isKeyPressed(Input.Keys.W) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.UP) && side.equals("up")) {
-        y += speed * Gdx.graphics.getDeltaTime();
-    }
-    if (Gdx.input.isKeyPressed(Input.Keys.S) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.DOWN) && side.equals("up")) {
-        y -= speed * Gdx.graphics.getDeltaTime();
+        this.client = client;
+        this.playerID = client.getPlayerId();
     }
 
-    if (x < 0) x = 0;
-    if (x > screenWidth - texture.getWidth()) x = screenWidth - texture.getWidth();
-    if (y < 0) y = 0;
-    if (y > screenHeight - texture.getHeight()) y = screenHeight - texture.getHeight();
-
-    hitbox.setPosition(x, y);
-
-    if ((Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_ENTER) && side.equals("up") || Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && side.equals("down"))
-        && projectileCooldown <= 0) {
-        shoot();
-        projectileCooldown = 0.3f;
+    public int getID() {
+        return playerID;
     }
 
-    projectileCooldown -= Gdx.graphics.getDeltaTime();
+    // Fix the shoot method to ensure correct direction
+    public void shoot() {
+        Vector2 playerCenter = new Vector2(x + texture.getWidth() / 2f, y + texture.getHeight() / 2f);
 
-    for (int i = projectiles.size - 1; i >= 0; i--) {
-        projectiles.get(i).update();
+        // Set correct direction based on player side
+        Vector2 direction = side.equals("up") ? new Vector2(0, -1) : new Vector2(0, 1);
 
-        if (opponent != null && projectiles.get(i).hit(opponent)) {
-            projectiles.removeIndex(i);
-        } else if (projectiles.get(i).isOffScreen(screenWidth, screenHeight)) {
-            projectiles.removeIndex(i);
+        System.out.println("Shooting projectile from " + side + " with direction " + direction);
+
+        // Spawn projectile locally
+        Projectile projectile = spawnProjectile(playerCenter.x, playerCenter.y, direction.x, direction.y, true);
+
+        // If client is set, notify network about projectile
+        if (client != null) {
+            client.sendProjectile(projectile);
         }
     }
-}
 
-private void shoot() {
-    Vector2 playerCenter = new Vector2(x + texture.getWidth() / 2f, y + texture.getHeight() / 2f);
-    Vector2 direction = side.equals("up") ? new Vector2(0, -1) : new Vector2(0, 1);
-    spawnProjectile(playerCenter.x, playerCenter.y, direction.x, direction.y);
-}
+    public Projectile spawnProjectile(float startX, float startY, float directionX, float directionY, boolean isLocallyManaged) {
+        if (client == null) {
+            System.err.println("Warning: Client is null in spawnProjectile!");
+        }
 
-public Rectangle getHitbox() {
-    return hitbox;
-}
-
-public void takeDamage(int damage) {
-    health -= damage;
-    if (health <= 0) {
-        health = 0;
-        isDead = true;
+        Vector2 direction = new Vector2(directionX, directionY).nor();
+        int sourceId = (client != null) ? client.getPlayerId() : -1; // Handle null client
+        Projectile proj = new Projectile(startX, startY, 10, direction, 500, sourceId);
+        projectiles.add(proj);
+        return proj;
     }
-}
 
-public boolean isDead() {
-    return isDead;
-}
 
-public void render(SpriteBatch batch) {
-    if (!isDead) {
-        batch.draw(texture, x, y);
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public String getSide() {
+        return side;
+    }
+
+    public void setPosition(float x, float y) {
+        this.x = x;
+        this.y = y;
+        hitbox.setPosition(x, y);
+    }
+
+    public void update(Player opponent, float deltaTime) {
+        if (isDead) return;
+
+        // Handle player movement based on input (only for local player)
+        if (client != null && client.getPlayerId() == this.playerID) {
+            if (Gdx.input.isKeyPressed(Input.Keys.A) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.LEFT) && side.equals("up")) {
+                x -= speed * deltaTime;
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.D) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.RIGHT) && side.equals("up")) {
+                x += speed * deltaTime;
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.W) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.UP) && side.equals("up")) {
+                y += speed * deltaTime;
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.S) && side.equals("down") || Gdx.input.isKeyPressed(Input.Keys.DOWN) && side.equals("up")) {
+                y -= speed * deltaTime;
+            }
+
+            // Clamp player position within screen bounds
+            if (x < 0) x = 0;
+            if (x > screenWidth - texture.getWidth()) x = screenWidth - texture.getWidth();
+            if (y < 0) y = 0;
+            if (y > screenHeight - texture.getHeight()) y = screenHeight - texture.getHeight();
+
+            hitbox.setPosition(x, y);
+
+            // Handle shooting (only for local player)
+            if ((Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_ENTER) && side.equals("up") ||
+                Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && side.equals("down"))
+                && projectileCooldown <= 0) {
+                shoot();
+                projectileCooldown = 0.3f;
+            }
+
+            projectileCooldown -= deltaTime;
+        }
+
+        // Update all projectiles and check for collisions
+        for (int i = projectiles.size - 1; i >= 0; i--) {
+            Projectile projectile = projectiles.get(i);
+
+            // Update projectile position with deltaTime
+            projectile.update(deltaTime);
+
+            // Check for hits against opponent
+            if (opponent != null && !opponent.isDead() && projectile.hit(opponent)) {
+                projectiles.removeIndex(i);
+
+                // If the opponent's health is now 0, notify server about death
+                if (opponent.getHealth() <= 0 && client != null) {
+                    client.sendPlayerDeath("opp");
+                    System.out.println("Opponent died from our projectile, sent death notification");
+                }
+            }
+            // Remove if off-screen
+            else if (projectile.isOffScreen(screenWidth, screenHeight)) {
+                projectiles.removeIndex(i);
+            }
+        }
+    }
+
+    // Add setter for client
+    public void setClient(GameClient client) {
+        this.client = client;
+    }
+
+    public Rectangle getHitbox() {
+        return hitbox;
+    }
+
+    public void takeDamage(int damage) {
+        health -= damage;
+        if (health <= 0) {
+            health = 0;
+            isDead = true;
+
+            // If we're damaged to death and have a client, notify server
+            if (client != null) {
+                client.sendPlayerDeath("self");
+                System.out.println("Local player died from damage, sent death notification");
+            }
+        }
+    }
+
+    // Make isDead public (it looks like it already is, but just to confirm)
+    public boolean isDead() {
+        return isDead;
+    }
+
+    // Add a method to explicitly set death state (for network sync)
+    public void setDead(boolean dead) {
+        this.isDead = dead;
+    }
+
+    public void reset() {
+        isDead = false;
+        health = 100;
+    }
+    public void render(SpriteBatch batch) {
+        if (!isDead) {
+            batch.draw(texture, x, y);
+
+            // Render all projectiles
+            for (Projectile projectile : projectiles) {
+                projectile.render(batch);
+            }
+        }
+    }
+
+    public void dispose() {
+        texture.dispose();
         for (Projectile projectile : projectiles) {
-            projectile.render(batch);
+            projectile.dispose();
         }
     }
-}
 
-public void dispose() {
-    texture.dispose();
-    for (Projectile projectile : projectiles) {
-        projectile.dispose();
+    public int getHealth() {
+        return this.health;
     }
-}
-
 }

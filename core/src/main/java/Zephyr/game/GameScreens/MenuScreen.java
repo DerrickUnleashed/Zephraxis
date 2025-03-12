@@ -25,6 +25,8 @@ public class MenuScreen extends ScreenAdapter implements GameClient.GameStateCal
     private Stage stage;
     private BitmapFont font;
     private Main game;
+    // Reference to the start button for proper removal
+    private TextButton startButton;
 
     public MenuScreen(GameClient client, Main game) {
         this.client = client;
@@ -48,8 +50,8 @@ public class MenuScreen extends ScreenAdapter implements GameClient.GameStateCal
         buttonStyle.up = new TextureRegionDrawable(new TextureRegion(new Texture("button_up.png")));
         buttonStyle.down = new TextureRegionDrawable(new TextureRegion(new Texture("button_down.png")));
 
-        // Create start button
-        TextButton startButton = new TextButton("Start Game", buttonStyle);
+        // Create start button (only one button as requested)
+        startButton = new TextButton("", buttonStyle);
         startButton.setPosition(Gdx.graphics.getWidth() / 2 - startButton.getWidth() / 2,
             Gdx.graphics.getHeight() / 2 - startButton.getHeight() / 2);
 
@@ -58,6 +60,8 @@ public class MenuScreen extends ScreenAdapter implements GameClient.GameStateCal
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 Gdx.app.log("MenuScreen", "Start button clicked");
+                // Actually remove the button from the stage
+                startButton.remove();
                 game.setScreen(new WaitingScreen(game, client));
             }
         });
@@ -88,6 +92,11 @@ public class MenuScreen extends ScreenAdapter implements GameClient.GameStateCal
         if (!gameStarted) {
             gameStarted = true;
 
+            // Properly remove the start button if it still exists
+            if (startButton != null && startButton.getStage() != null) {
+                startButton.remove();
+            }
+
             // Determine player side
             String playerSide = (client.getPlayerId() < opponentId) ? "down" : "up";
 
@@ -98,6 +107,11 @@ public class MenuScreen extends ScreenAdapter implements GameClient.GameStateCal
 
             System.out.println("Game starting! Assigned side: " + playerSide);
         }
+    }
+
+    @Override
+    public void onPlayerDeath(int playerId) {
+        // not needed in MenuScreen
     }
 
     // Implementations for other interface methods

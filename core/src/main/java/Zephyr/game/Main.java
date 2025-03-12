@@ -6,7 +6,7 @@ import com.badlogic.gdx.Game;
 
 public class Main extends Game {
     private GameClient client;
-    private static final String DEFAULT_SERVER = "0.0.0.0";
+    private static final String DEFAULT_SERVER = "127.0.1.2";
     private static final int DEFAULT_PORT = 6000;
 
     @Override

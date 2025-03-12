@@ -1,6 +1,7 @@
 package Zephyr.game.network;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +18,15 @@ public class GameServer {
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            // Display server information to help with configuration
             System.out.println("Server started on port " + PORT);
+
+            // Print the local IP address for debugging purposes
+            System.out.println("Server local IP address: " + InetAddress.getLocalHost().getHostAddress());
+            System.out.println("NOTE: For players on different networks to connect:");
+            System.out.println("1. Make sure this server is running on a machine with a public IP or");
+            System.out.println("2. Set up port forwarding on your router for port " + PORT);
+            System.out.println("3. Players should use your public IP address when connecting");
             System.out.println("Server is listening on all interfaces.");
 
             while (true) {
@@ -29,12 +38,16 @@ public class GameServer {
                         continue;
                     }
 
+                    // Log connection information to help debug connection issues
+                    String clientAddress = playerSocket.getInetAddress().getHostAddress();
+                    System.out.println("New connection from: " + clientAddress);
+
                     int playerId = nextPlayerId++;
                     PlayerConnection playerConn = new PlayerConnection(playerId, playerSocket, players, readyPlayers);
                     players.put(playerId, playerConn);
                     threadPool.execute(playerConn);
 
-                    System.out.println("Player " + playerId + " connected. Total players: " + players.size());
+                    System.out.println("Player " + playerId + " connected from " + clientAddress + ". Total players: " + players.size());
                     broadcastToAll("CONNECT " + playerId);
                     checkAndStartGameIfReady();
                 } catch (IOException e) {
@@ -69,6 +82,10 @@ public class GameServer {
                 players.get(player2).sendMessage("START " + player1);
 
                 System.out.println("Game started between players " + player1 + " and " + player2);
+
+                // Remove these players from the ready pool to prevent duplicate matching
+                readyPlayers.remove(player1);
+                readyPlayers.remove(player2);
             }
         } else {
             System.out.println("Not starting game yet. Players: " + players.size() +
@@ -120,6 +137,11 @@ class PlayerConnection implements Runnable {
                         readyPlayers.put(readyPlayerId, true);
                         System.out.println("Player " + readyPlayerId + " is ready to play");
                         GameServer.checkAndStartGameIfReady();
+                        break;
+                    case "DEATH":
+                        int deadPlayerId = Integer.parseInt(parts[1]);
+                        broadcastToOthers("DEATH " + deadPlayerId);
+                        System.out.println("Player " + deadPlayerId + " has died");
                         break;
                     default:
                         System.out.println("Unknown message type: " + parts[0]);

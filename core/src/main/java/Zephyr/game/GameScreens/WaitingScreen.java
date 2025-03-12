@@ -87,6 +87,11 @@ public class WaitingScreen extends ScreenAdapter implements GameClient.GameState
     }
 
     @Override
+    public void onPlayerDeath(int playerId) {
+
+    }
+
+    @Override
     public void onPlayerConnect(int id) {
         System.out.println("Player " + id + " connected while waiting.");
     }

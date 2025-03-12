@@ -1,6 +1,8 @@
 package Zephyr.game.network;
 
+import Zephyr.game.GameScreens.PVPScreen;
 import Zephyr.game.Main;
+import Zephyr.game.projectiles.Projectile;
 import com.badlogic.gdx.ApplicationAdapter;
 import java.io.*;
 import java.net.Socket;
@@ -20,7 +22,20 @@ public class GameClient extends ApplicationAdapter {
     private int playerId = -1;
     private GameStateCallback callback;
     private Json json;
-    private Main game; // Reference to the main game class for screen transitions
+    private Main game;
+
+    public void sendProjectile(Projectile projectile) {
+        if (writer != null && playerId != -1) {
+            String projMessage = json.toJson(new ProjectileData(projectile.getX(), projectile.getY(),
+                projectile.getVelocity().x, projectile.getVelocity().y));
+            writer.println("PROJ " + playerId + " " + projMessage);
+        }
+    }
+
+    public int getPlayerId() {
+        return playerId;
+    }
+
 
     public interface GameStateCallback {
         void onPlayerUpdate(int playerId, float x, float y);
@@ -28,10 +43,30 @@ public class GameClient extends ApplicationAdapter {
         void onPlayerConnect(int id);
         void onPlayerDisconnect(int id);
         void onGameStart(int opponentId);
+        void onPlayerDeath(int playerId);
     }
 
-    public int getPlayerId() {
-        return this.playerId;
+    // Add a method to send player death
+    // Update GameClient.java to fix the sendPlayerDeath method
+    public void sendPlayerDeath(String who) {
+        if (writer != null && playerId != -1) {
+            if (who.equals("self")) {
+                writer.println("DEATH " + playerId);
+                System.out.println("Sent DEATH signal for player " + playerId);
+            } else if (who.equals("opp")) {
+                // Find opponent player ID
+                if (callback instanceof PVPScreen) {
+                    PVPScreen screen = (PVPScreen) callback;
+                    for (Integer remoteId : screen.getRemotePlayerIds()) {
+                        writer.println("DEATH " + remoteId);
+                        System.out.println("Sent DEATH signal for opponent " + remoteId);
+                        break; // Only need first opponent in 1v1 game
+                    }
+                } else {
+                    System.out.println("Cannot send opponent death - callback is not a PVPScreen");
+                }
+            }
+        }
     }
 
     public void setGameStateCallback(GameStateCallback callback) {
@@ -78,12 +113,6 @@ public class GameClient extends ApplicationAdapter {
         }
     }
 
-    public void sendProjectile(float x, float y, float directionX, float directionY) {
-        if (writer != null && playerId != -1) {
-            String projMessage = json.toJson(new ProjectileData(x, y, directionX, directionY));
-            writer.println("PROJ " + playerId + " " + projMessage);
-        }
-    }
 
     public void sendReadyToPlay() {
         if (writer != null && playerId != -1) {
@@ -102,10 +131,23 @@ public class GameClient extends ApplicationAdapter {
         } catch (IOException e) {
             if (isRunning) {
                 System.err.println("Connection to server lost: " + e.getMessage());
+                disconnect();
             }
         }
     }
-
+    private void disconnect() {
+        try {
+            isRunning = false;
+            if (listenerThread != null) {
+                listenerThread.join(1000);
+            }
+            if (writer != null) writer.close();
+            if (reader != null) reader.close();
+            if (socket != null) socket.close();
+        } catch (Exception e) {
+            System.err.println("Error closing client: " + e.getMessage());
+        }
+    }
     private void handleServerMessage(String message) {
         try {
             if (callback == null) return;
@@ -131,6 +173,9 @@ public class GameClient extends ApplicationAdapter {
                     break;
                 case "DISCONNECT":
                     callback.onPlayerDisconnect(Integer.parseInt(parts[1]));
+                    break;
+                case "DEATH":
+                    callback.onPlayerDeath(Integer.parseInt(parts[1]));
                     break;
             }
         } catch (Exception e) {
