@@ -1,0 +1,70 @@
+Title: Zephraxis - Comprehensive Multiplayer Game Project Report
+
+Team:  
+Member 1: Derrick Samuel R.  
+Member 2: Tarun Srikumar
+
+Contribution Declaration:  
+Derrick Samuel R.:
+- Developed network communication modules focusing on server-side implementation including GameServer.
+- Implemented message broadcasting, player connection management, and game start logic.
+- Designed and implemented half of the UI screens, including MenuScreen.
+- Developed network communication modules focusing on client-side message handling and synchronization.
+- Managed game state transitions and rendering logic.
+
+Tarun Srikumar:
+- Developed the Main game class and core game logic.
+- Implemented player mechanics including movement, shooting, health, and projectiles.
+- Designed and implemented half of the UI screens, including WaitingScreen and PVPScreen.
+- Developed projectile mechanics and integrated them with network events.
+- Conducted testing, debugging, and performance optimization.
+
+Introduction:  
+Zephraxis is a multiplayer game developed using the libGDX framework, designed to provide an engaging player-versus-player experience over a network. The project leverages a client-server architecture to synchronize game states and ensure smooth gameplay. This report documents the entire development process, including design, implementation, testing, and challenges faced.
+
+Project Management Plan:  
+The project was managed using an iterative approach with clear milestones for core gameplay, networking, UI design, and testing. Tasks were divided between two team members to optimize productivity. Regular code reviews and testing sessions ensured quality and timely progress.
+
+Requirement Specification (SRS):  
+- Real-time multiplayer gameplay with network synchronization  
+- Client-server communication for game state updates  
+- Responsive and intuitive UI with menu, waiting, and gameplay screens  
+- Player mechanics including movement, shooting, health, and death  
+- Robust handling of player connections, disconnections, and game start events  
+- Support for up to 20 concurrent players on the server
+
+System Architecture:  
+The system follows a modular client-server model. The server manages player connections, readiness, and game start logic, broadcasting messages to clients. Clients handle rendering, input, and local game state updates. The architecture supports scalability and maintainability.
+
+Dynamic Design:  
+Game state updates are managed via callbacks in the GameClient class. Player positions, projectiles, and game events are synchronized in real-time. The server uses a thread pool to handle multiple player connections concurrently, ensuring responsiveness.
+
+Sub-system Design:  
+- Main: Initializes the game client and sets the initial menu screen.  
+- MenuScreen: Provides the main menu UI and handles game start input .  
+- WaitingScreen: Displays waiting status and manages readiness signaling .  
+- PVPScreen: Manages gameplay rendering, player updates, and game logic .  
+- Player: Implements player mechanics including movement and shooting .  
+- Projectile: Handles projectile movement, rendering, collision detection, and damage .  
+- GameClient: Manages client-side network communication, message handling, and game state callbacks .  
+- GameServer: Handles server-side player connections, message broadcasting, game start logic, and disconnections .
+
+UI Design:  
+The UI consists of a main menu with a start button , a waiting screen displaying connection status , and a gameplay screen showing player information and game state. Visual assets such as backgrounds, buttons, and player sprites enhance the user experience.
+
+Testing (Test plan, test cases, test results):  
+Testing involved connecting multiple clients to the server to verify synchronization of player actions, projectiles, and game events. Test cases included player movement, shooting, death notifications, and disconnection handling. Results demonstrated stable performance, accurate state updates, and smooth gameplay.
+
+Known issues:  
+- Limited game modes currently (only PvP)  
+- No AI opponents implemented  
+- Potential network latency under high load conditions  
+- UI could be enhanced with additional feedback and animations
+
+Conclusion:  
+Zephraxis successfully demonstrates a functional multiplayer game using libGDX with effective client-server communication. The project meets its objectives and provides a solid foundation for future enhancements, including additional game modes and AI integration.
+
+Bibliography:  
+- libGDX Documentation: https://libgdx.com/  
+- Java Networking Tutorials  
+- Game Development Best Practices
